@@ -12,7 +12,6 @@ datasource db {
 model Post {
     id        Int      @id @default(autoincrement())
     name      String
-    status    String
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
