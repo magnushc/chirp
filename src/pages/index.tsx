@@ -8,11 +8,23 @@ import relativeTime from "dayjs/plugin/relativeTime";
 
 import Image from "next/image";
 import { LoadingPage } from "~/components/loading";
+import { useState } from "react";
 
 dayjs.extend(relativeTime);
 
 const CreatePostWizard = () => {
   const { user } = useUser();
+
+  const [input, setInput] = useState("");
+
+const ctx = api.useContext()
+
+  const { mutate, isLoading: isPosting } = api.posts.create.useMutation({
+    onSuccess: () => {
+      setInput("");
+      void ctx.posts.getAll.invalidate();
+    },
+  });
 
   console.log(user);
 
@@ -30,12 +42,17 @@ const CreatePostWizard = () => {
       <input
         placeholder="Type some emojis!"
         className="grow bg-transparent outline-none"
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        disabled={isPosting}
       />
+      <button onClick={() => mutate({ content: input })}>Post</button>
     </div>
   );
 };
 
-type PostWithUser = RouterOutputs["post"]["getAll"][number];
+type PostWithUser = RouterOutputs["posts"]["getAll"][number];
 
 const PostView = (props: PostWithUser) => {
   const { post, author } = props;
@@ -60,7 +77,7 @@ const PostView = (props: PostWithUser) => {
 };
 
 const Feed = () => {
-  const { data, isLoading: postsLoading } = api.post.getAll.useQuery();
+  const { data, isLoading: postsLoading } = api.posts.getAll.useQuery();
 
   if (postsLoading) return <LoadingPage />;
 
@@ -68,7 +85,7 @@ const Feed = () => {
 
   return (
     <div className="flex flex-col">
-      {[...data, ...data]?.map((fullpost) => (
+      {data.map((fullpost) => (
         <PostView {...fullpost} key={fullpost.post.id} />
       ))}
     </div>
@@ -79,7 +96,7 @@ export default function Home() {
   const { isLoaded: userLoaded, isSignedIn } = useUser();
 
   // Start fetching asap
-  api.post.getAll.useQuery();
+  api.posts.getAll.useQuery();
 
   // Return empty div if user isn't loaded yets
   if (!userLoaded) return <div />;
